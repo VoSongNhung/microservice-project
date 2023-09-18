@@ -1,5 +1,6 @@
 package com.example.productservice.service.implservice;
 
+import com.example.productservice.dto.CheckIsInStock;
 import com.example.productservice.dto.ProductRequest;
 import com.example.productservice.dto.ProductResponse;
 import com.example.productservice.dto.ProductUpdate;
@@ -9,8 +10,9 @@ import com.example.productservice.repository.ProductRepository;
 import com.example.productservice.service.ProductService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.crossstore.ChangeSetPersister;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -19,6 +21,11 @@ import java.util.List;
 public class ProductServiceImplement implements ProductService {
     @Autowired
     ProductRepository productRepository;
+//    KafkaProducerService kafkaProducerService;
+//    KafkaProducerServiceImplement kafkaProducerServiceImplement;
+    @Autowired
+    private KafkaTemplate<String, String> kafkaTemplate;
+
     @Override
     public void createProduct(ProductRequest productRequest) {
         Product product = Product.builder()
@@ -35,13 +42,24 @@ public class ProductServiceImplement implements ProductService {
     @Override
     public List<ProductResponse> getAllProduct() {
         List<Product> productList = productRepository.findAll();
+//        List<String> codeList = productList.stream()
+//                .map(Product::getCode)
+//                .collect(Collectors.toList());
+////        listKafkaProducerService.sendListToKafka(codeList.toString());
+//        kafkaTemplate.send("sendCode", codeList.toString());
         return productList.stream().map(product -> maptoProductResponse(product)).toList();
     }
 
     @Override
-    public List<ProductResponse> getAllProductByCode(String code) {
-        List<Product> productList = productRepository.findProductByCode(code);
-        return productList.stream().map(product -> maptoProductResponse(product)).toList();
+    @Transactional(readOnly = true)
+    public List<CheckIsInStock> isInStock(List<String> listIdProduct) {
+        return productRepository.findByIdIn(listIdProduct)
+                .stream().map(product -> CheckIsInStock.builder()
+                            .idProduct(product.getId())
+                            .isInStock(product.getNumber()>0)
+                            .build()
+                ).toList();
+//        return productList.stream().map(product -> maptoProductResponse(product)).toList();
     }
 
     @Override
