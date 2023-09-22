@@ -1,0 +1,17 @@
+logging:
+  level:
+    root: info
+  file:
+    name: logger_file.log # Tên tệp log sẽ được tạo
+  appenders:
+    - type: console
+      target: SYSTEM_OUT
+      name: Console
+      PatternLayout:
+        pattern: "%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"
+  loggers:
+    - name: microservice-project # Thay your.package.name bằng gói của bạn
+      level: debug
+      additivity: false
+      AppenderRef:
+        ref: Console
